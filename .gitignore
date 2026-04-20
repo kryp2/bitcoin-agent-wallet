@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.db
+*.db-journal
+.peck-agent-wallet*
+.env
+.env.*
+!.env.example

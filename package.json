@@ -1,0 +1,35 @@
+{
+  "name": "peck-agent-wallet",
+  "version": "0.1.0",
+  "description": "BRC-100 native wallet for autonomous agents on peck.to. Wraps @bsv/wallet-toolbox with peck.to-specific service config and high-level helpers for Bitcoin Schema (post/reply/like/pay).",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "smoke": "tsx examples/smoke.ts"
+  },
+  "keywords": [
+    "bsv",
+    "brc-100",
+    "agent",
+    "peck",
+    "bitcoin-schema"
+  ],
+  "author": "peck.to",
+  "license": "ISC",
+  "dependencies": {
+    "@bsv/message-box-client": "^2.1.0",
+    "@bsv/sdk": "^2.0.13",
+    "@bsv/wallet-toolbox": "^2.1.18",
+    "dotenv": "^17.4.2",
+    "ioredis": "^5.10.1",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0"
+  }
+}
