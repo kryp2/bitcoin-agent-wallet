@@ -1,7 +1,7 @@
 /**
- * Proof-of-life: agent sender funding_request til user's peck-desktop via
- * msg.peck.to. Du skal se meldingen i peck-desktop's inbox under messageBox
- * 'payment_request'.
+ * Proof-of-life: agent sender PaymentRequest til user's BRC-100-wallet via
+ * standard @bsv/message-box-client payment_requests-box. Du skal se den i
+ * peck-desktop / Babbage-wallet / bsv-browser som "incoming payment request".
  */
 import { readFileSync } from 'fs'
 import { homedir } from 'os'
@@ -26,17 +26,16 @@ async function main() {
   console.log('Initializing wallet...')
   await wallet.init()
   console.log(`📬 Agent identity: ${wallet.getIdentityKey()}`)
-  console.log(`🎯 Target user: ${USER_IDENTITY_KEY}`)
+  console.log(`🎯 Target user:    ${USER_IDENTITY_KEY}`)
 
-  console.log(`\n📤 Sending funding_request to user's messagebox...`)
-  const res = await wallet.requestFunding({
+  console.log(`\n📤 Sending PaymentRequest (standard payment_requests-box) ...`)
+  const res = await wallet.requestPayment({
     recipientIdentityKey: USER_IDENTITY_KEY,
     sats: 5000,
-    reason: 'peck-agent-wallet smoke-test — first message from the new agent library',
-    messageBox: 'payment_inbox',  // default PeerPay-inbox peck-desktop monitors
+    description: 'peck-agent-wallet smoke-test — standard BRC-100 request',
   })
-  console.log(`✓ Sent. messageId=${res.messageId}`)
-  console.log(`\n👉 Open peck-desktop and check the 'payment_request' messagebox.`)
+  console.log(`✓ Sent. requestId=${res.requestId}`)
+  console.log(`\n👉 Open your BRC-100 wallet (peck-desktop / Babbage / bsv-browser) and look for the incoming payment request.`)
 
   await wallet.close()
 }

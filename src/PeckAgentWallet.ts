@@ -32,15 +32,6 @@ import type {
 const DEFAULT_BROADCAST_STREAM = 'broadcast-queue'
 const DEFAULT_MESSAGEBOX_URL = process.env.MESSAGEBOX_URL || 'https://msg.peck.to'
 
-export interface FundingRequest {
-  kind: 'funding_request'
-  agent_address: string
-  agent_identity_key: string
-  requested_sats: number
-  reason?: string
-  created_at: string
-}
-
 export class PeckAgentWallet {
   private config: PeckAgentWalletConfig
   private setup?: SetupWallet
@@ -95,9 +86,11 @@ export class PeckAgentWallet {
 
     // MessageBoxClient for generisk meldingsutveksling (funding-requests etc).
     // PeerPayClient extends det + håndterer BRC-29-payments automatisk.
-    // Begge bruker vår wallet for BRC-104 auth.
-    // init() anoint'er host på overlay så sendere kan finne oss via
-    // SHIP-protocol — nødvendig før listMessages/listIncomingPayments funker.
+    // Begge bruker vår wallet for BRC-104 auth. init() verifiserer kun wallet-
+    // connectivity — SHIP-anoint må gjøres eksplisitt via anointHost() etter at
+    // agenten har fått funding (krever en spendable UTXO for å lage
+    // tm_messagebox PushDrop-output). Same-host same-routing (agent og
+    // recipient begge på msg.peck.to) fungerer uten anoint.
     this.messageBox = new MessageBoxClient({
       walletClient: this.setup.wallet,
       host: DEFAULT_MESSAGEBOX_URL,
@@ -111,29 +104,47 @@ export class PeckAgentWallet {
     await this.peerPay.init(DEFAULT_MESSAGEBOX_URL)
   }
 
-  // --- Message-box + funding ---
-
   /**
-   * Send en funding_request-melding til recipient (vanligvis user's identity-
-   * key). Mottaker's BRC-100-wallet (peck-desktop) ser meldingen i inbox'en
-   * sin, bruker kan approve, og svarer med BRC-29-payment tilbake via egen
-   * message-box-kanal.
+   * Anoint agentens messagebox-host på overlay (SHIP-advertisement). Påkrevd
+   * for cross-host discovery — hvis agenten og sender bruker ulike messagebox-
+   * hosts, må senderens wallet kunne SHIP-lookup'e agenten.
+   *
+   * Krever en spendable UTXO (minst ~10 sat til fee + 1 sat til advertisement-
+   * output). Kall først etter at agenten har mottatt funding.
    */
-  async requestFunding(args: {
-    recipientIdentityKey: string
-    sats: number
-    reason?: string
-    messageBox?: string  // default 'payment_request'
-  }): Promise<{ messageId: string }> {
+  async anointHost(host?: string): Promise<{ txid: string }> {
     this.ensureInit()
     if (!this.messageBox) throw new Error('MessageBox not initialized')
-    const req: FundingRequest = this.makeFundingRequest(args.sats, args.reason)
-    const res = await this.messageBox.sendMessage({
+    return this.messageBox.anointHost(host || DEFAULT_MESSAGEBOX_URL)
+  }
+
+  // --- Payment requests (BRC-100 / @bsv/message-box-client standard) ---
+
+  /**
+   * Be en recipient (user's BRC-100-wallet eller annen agent) om betaling via
+   * standard `payment_requests`-box. Sender en PaymentRequestMessage med
+   * requestId + HMAC-proof (protocolID [2, 'payment request auth']). Kompatible
+   * wallets (Babbage, bsv-browser, peck-desktop) plukker den opp via
+   * listIncomingPaymentRequests og kan approve → sendLivePayment til vårt
+   * payment_inbox.
+   *
+   * Returnerer requestId + requestProof slik at caller kan cancel'e senere.
+   * Kaster 'Payment request blocked' hvis recipient har blokkert vår identityKey.
+   */
+  async requestPayment(args: {
+    recipientIdentityKey: string
+    sats: number
+    description: string
+    expiresAtMs?: number
+  }): Promise<{ requestId: string; requestProof: string }> {
+    this.ensureInit()
+    if (!this.peerPay) throw new Error('PeerPay not initialized')
+    return this.peerPay.requestPayment({
       recipient: args.recipientIdentityKey,
-      messageBox: args.messageBox || 'payment_request',
-      body: JSON.stringify(req),
+      amount: args.sats,
+      description: args.description,
+      expiresAt: args.expiresAtMs ?? Date.now() + 3600_000,
     })
-    return { messageId: res.messageId || '' }
   }
 
   /**
@@ -185,22 +196,6 @@ export class PeckAgentWallet {
   /** Agentens identityKey (BRC-42 public key, hex). */
   getIdentityKey(): string {
     return this.identityKey
-  }
-
-  /**
-   * Produser en struktur for å be en user's wallet (eller annen agent) om
-   * funding. Sendes via message-box eller annen ut-av-bånd-kanal. Mottaker-
-   * walleten bygger en BRC-29-payment og sender atomic BEEF tilbake.
-   */
-  makeFundingRequest(requestedSats: number, reason?: string): FundingRequest {
-    return {
-      kind: 'funding_request',
-      agent_address: this.address,
-      agent_identity_key: this.identityKey,
-      requested_sats: requestedSats,
-      reason,
-      created_at: new Date().toISOString(),
-    }
   }
 
   /**
