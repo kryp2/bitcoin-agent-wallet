@@ -11,7 +11,7 @@
  * Service identifier defaults to 'peck-agent'. Supply `account` to namespace
  * multiple agent identities on the same machine ('default', 'scribe-01', …).
  */
-import { readFileSync, existsSync, renameSync, mkdirSync } from 'fs'
+import { readFileSync, existsSync, renameSync, mkdirSync, writeFileSync } from 'fs'
 import { homedir } from 'os'
 import { join, dirname } from 'path'
 import keytar from 'keytar'
@@ -163,5 +163,5 @@ security find-generic-password -s peck-agent -a default # macOS
 
 Managed by \`peck-agent-wallet/src/keychain.ts\`.
 `
-  require('fs').writeFileSync(breadcrumbPath, content, 'utf-8')
+  writeFileSync(breadcrumbPath, content, 'utf-8')
 }
