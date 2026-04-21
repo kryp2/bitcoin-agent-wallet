@@ -1,24 +1,51 @@
 {
   "name": "peck-agent-wallet",
   "version": "0.1.0",
-  "description": "BRC-100 native wallet for autonomous agents on peck.to. Wraps @bsv/wallet-toolbox with peck.to-specific service config and high-level helpers for Bitcoin Schema (post/reply/like/pay).",
+  "description": "BRC-100 native wallet for autonomous agents on peck.to. Wraps @bsv/wallet-toolbox with peck.to-specific service config, keychain-based identity storage, and high-level helpers for Bitcoin Schema (post/reply/like/pay).",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CLAUDE.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "dev": "tsx src/index.ts",
     "smoke": "tsx examples/smoke.ts"
   },
   "keywords": [
     "bsv",
+    "bitcoin-sv",
     "brc-100",
+    "brc-29",
     "agent",
     "peck",
-    "bitcoin-schema"
+    "bitcoin-schema",
+    "peerpay",
+    "wallet",
+    "keychain"
   ],
-  "author": "peck.to",
+  "author": "kryp2 (peck.to)",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kryp2/peck-agent-wallet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kryp2/peck-agent-wallet/issues"
+  },
+  "homepage": "https://github.com/kryp2/peck-agent-wallet#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@bsv/message-box-client": "^2.1.0",
     "@bsv/sdk": "^2.0.13",
