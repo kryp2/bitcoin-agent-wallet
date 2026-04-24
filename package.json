@@ -1,6 +1,6 @@
 {
   "name": "bitcoin-agent-wallet",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "BRC-100 native wallet primitive for autonomous agents on BSV. Wraps @bsv/wallet-toolbox with OS-keychain identity storage, standard PeerPay funding via @bsv/message-box-client, and a broadcast() primitive for arbitrary Bitcoin Schema / locking scripts.",
   "type": "module",
   "main": "dist/index.js",
@@ -33,7 +33,7 @@
     "messagebox"
   ],
   "author": "kryp2",
-  "license": "ISC",
+  "license": "Open BSV License v5",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kryp2/bitcoin-agent-wallet.git"

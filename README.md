@@ -208,4 +208,4 @@ This package was originally published as `peck-agent-wallet` (v0.1.0–v0.2.0) b
 
 ## License
 
-ISC
+Open BSV License v5. See [LICENSE](./LICENSE).
