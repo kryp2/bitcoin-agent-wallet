@@ -8,7 +8,8 @@ export type {
 } from './types.js'
 export {
   buildPost, buildLike, buildRepost, buildFollow,
-  PROTO_B, PROTO_MAP, PROTO_AIP,
+  PROTO_B, PROTO_MAP, PROTO_AIP, PIPE,
+  pushAcc, pipeAcc, signAip, toBytes,
 } from './bitcoinSchema.js'
 export {
   loadIdentityKey,
