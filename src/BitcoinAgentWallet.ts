@@ -82,7 +82,10 @@ export class BitcoinAgentWallet {
     // inclusion. Mutate the storage instance directly post-init so all
     // subsequent createAction calls bill at peck-policy.
     const desiredFeeModel = this.config.feeModel ?? { model: 'sat/kb' as const, value: 100 }
-    ;(this.setup.activeStorage as any).feeModel = desiredFeeModel
+    const setupAny = this.setup as any
+    if (setupAny.activeStorage) {
+      setupAny.activeStorage.feeModel = desiredFeeModel
+    }
     if (this.config.services?.redisHost) {
       this.redis = new Redis({
         host: this.config.services.redisHost,
