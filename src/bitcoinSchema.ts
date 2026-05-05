@@ -12,7 +12,7 @@
  * algorithm/pubkey i AIP-blokken). Ingen BSM-magic, ingen recovery-byte,
  * ingen DER→BSM-compact-bridge.
  */
-import { Script, OP, PrivateKey, Hash } from '@bsv/sdk'
+import { Script, OP, PrivateKey } from '@bsv/sdk'
 
 // Well-known Bitcoin Schema protocol prefix addresses (public).
 export const PROTO_B = '19HxigV4QyBv3tHpQVcUEQyq1pzZVdoAut'
@@ -55,10 +55,10 @@ export function signAip(s: Script, acc: number[], key: PrivateKey, _network: Net
   pushAcc(s, acc, PROTO_AIP)
   pushAcc(s, acc, 'BRC77')
   pushAcc(s, acc, pubKeyHex)
-  // ECDSA-sign sha256(preimage) direkte. Ingen BSM-magic. Returner DER bytes
-  // og base64-encode for embedding i scriptet.
-  const digest = Hash.sha256(acc)
-  const sig = key.sign(digest)
+  // ECDSA-sign sha256(preimage). PrivateKey.sign() i @bsv/sdk hash-er
+  // input internt (sha256), så vi sender RÅ preimage-bytes og får en sig
+  // over sha256(preimage). Dette matcher indexerens verifyAIPBRC77.
+  const sig = key.sign(acc)
   const derBytes = sig.toDER() as number[]
   const sigB64 = Buffer.from(derBytes).toString('base64')
   // Signaturen pushes til scriptet men inngår IKKE i preimagen.
