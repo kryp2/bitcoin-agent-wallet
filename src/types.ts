@@ -11,6 +11,10 @@ export interface BitcoinAgentWalletConfig {
   storage?: StorageConfig
   /** peck.to service-URL-er. Default peker på prod. */
   services?: ServicesConfig
+  /** Override fee-modellen wallet-toolbox bruker. Default { sat/kb, value: 100 }
+   *  som matcher peck-stack-policy. wallet-toolbox sin egen default er
+   *  value: 1 — for lavt for de fleste miner-policies. */
+  feeModel?: { model: 'sat/kb'; value: number }
 }
 
 export type StorageConfig =

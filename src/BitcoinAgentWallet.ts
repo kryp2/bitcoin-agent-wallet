@@ -74,6 +74,15 @@ export class BitcoinAgentWallet {
       filePath: storage.filePath,
       databaseName: storage.databaseName || 'peck-agent',
     })
+    // wallet-toolbox hard-codes feeModel = { sat/kb, value: 1 } in
+    // Setup.createStorageKnex (out/src/Setup.js:349) and exposes no Setup-arg
+    // to override. Fee policy across the peck stack is 100 sat/KB
+    // (peck-web/CLAUDE.md, MEMORY feedback_never_touch_fee_rate). 1 sat/KB
+    // is well below standard miner policy and risks rejection / slow
+    // inclusion. Mutate the storage instance directly post-init so all
+    // subsequent createAction calls bill at peck-policy.
+    const desiredFeeModel = this.config.feeModel ?? { model: 'sat/kb' as const, value: 100 }
+    ;(this.setup.activeStorage as any).feeModel = desiredFeeModel
     if (this.config.services?.redisHost) {
       this.redis = new Redis({
         host: this.config.services.redisHost,
