@@ -5,14 +5,14 @@
  * pakkes inn i en TX via wallet.createAction. All MAP-protokoll-parsing
  * gjøres nedstrøms av overlay's PeckSchemaTopicManager.
  *
- * AIP-signering: canonical Bitcom AIP. Signaturen dekker konkatenasjonen av
- * alle preceding pushdata-content-bytes — inkludert pipe-separatorer som
- * data-bytes (0x7c) og PROTO_AIP/algorithm/signing_address-feltene i AIP-
- * blokken — eksklusiv selve signatur-pushdataen. Verifiserbar av enhver
- * canonical AIP-implementasjon. Signing key SKAL være identity-key direkte;
- * SIGNING_ADDRESS er bare hash160(identityPubKey).
+ * AIP-signering: BRC-77 lane (peck-social-v1 §2.2 v1.1). Algoritme-marker
+ * "BRC77" med sender_pubkey_hex i signing-identifier-slotten og raw DER
+ * ECDSA-signatur over sha256(preimage). Preimage = konkatenasjon av alle
+ * preceding pushdata-content-bytes (inkludert pipe-bytes 0x7c og PROTO_AIP/
+ * algorithm/pubkey i AIP-blokken). Ingen BSM-magic, ingen recovery-byte,
+ * ingen DER→BSM-compact-bridge.
  */
-import { Script, OP, PrivateKey, BSM } from '@bsv/sdk'
+import { Script, OP, PrivateKey, Hash } from '@bsv/sdk'
 
 // Well-known Bitcoin Schema protocol prefix addresses (public).
 export const PROTO_B = '19HxigV4QyBv3tHpQVcUEQyq1pzZVdoAut'
@@ -43,20 +43,26 @@ export function pipeAcc(s: Script, acc: number[]): void {
   s.writeBin([PIPE])
 }
 
-// Canonical AIP-signering. acc skal inneholde alle preceding pushdata-bytes
-// fra B/MAP-seksjonene før denne kalles. Etter kall inneholder scriptet
-// fullt signert AIP-blokk; acc bør ikke brukes videre.
-export function signAip(s: Script, acc: number[], key: PrivateKey, network: Network): void {
-  const addr = key.toAddress(network === 'main' ? 'mainnet' : 'testnet') as string
+// Canonical AIP-signering — BRC-77 lane. acc skal inneholde alle preceding
+// pushdata-bytes fra B/MAP-seksjonene før denne kalles. Etter kall inneholder
+// scriptet fullt signert AIP-blokk; acc bør ikke brukes videre.
+//
+// `network` param beholdt for bakoverkompatibilitet med kallere — BRC-77 bruker
+// pubkey direkte og er nettverk-agnostisk, så param ignoreres.
+export function signAip(s: Script, acc: number[], key: PrivateKey, _network: Network): void {
+  const pubKeyHex = key.toPublicKey().toString()
   pipeAcc(s, acc)
   pushAcc(s, acc, PROTO_AIP)
-  pushAcc(s, acc, 'BITCOIN_ECDSA')
-  pushAcc(s, acc, addr)
-  // BSM.sign gjør "Bitcoin Signed Message"-preamble + double-sha256 + ECDSA
-  // internt. Vi pre-hasher IKKE (det var den gamle peck.to-shortcuten).
-  const sig = BSM.sign(acc, key, 'base64') as string
+  pushAcc(s, acc, 'BRC77')
+  pushAcc(s, acc, pubKeyHex)
+  // ECDSA-sign sha256(preimage) direkte. Ingen BSM-magic. Returner DER bytes
+  // og base64-encode for embedding i scriptet.
+  const digest = Hash.sha256(acc)
+  const sig = key.sign(digest)
+  const derBytes = sig.toDER() as number[]
+  const sigB64 = Buffer.from(derBytes).toString('base64')
   // Signaturen pushes til scriptet men inngår IKKE i preimagen.
-  s.writeBin(toBytes(sig))
+  s.writeBin(toBytes(sigB64))
 }
 
 export interface PostOpts {
