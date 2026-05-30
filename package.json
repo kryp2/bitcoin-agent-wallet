@@ -16,7 +16,8 @@
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "dev": "tsx src/index.ts",
-    "smoke": "tsx examples/smoke.ts"
+    "smoke": "tsx examples/smoke.ts",
+    "test": "vitest run"
   },
   "keywords": [
     "bsv",
@@ -60,6 +61,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.4"
   }
 }
