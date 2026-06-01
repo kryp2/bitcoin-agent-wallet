@@ -13,8 +13,38 @@
  */
 import { readFileSync, existsSync, renameSync, mkdirSync, writeFileSync } from 'fs'
 import { homedir } from 'os'
-import { join, dirname } from 'path'
-import keytar from 'keytar'
+import { join } from 'path'
+import type keytarType from 'keytar'
+
+/**
+ * Lazily-loaded, memoized `keytar` handle.
+ *
+ * `keytar` is an OPTIONAL dependency with a native build. On a headless / CI
+ * box where it is absent or unbuilt, a top-level `import keytar from 'keytar'`
+ * would throw at module-load time — which would crash even pure Bitcoin Schema
+ * builders (e.g. `import { buildPost }`) that never touch a secret.
+ *
+ * Instead we import it on first actual keychain use and throw a clear,
+ * actionable error if it is missing.
+ */
+let _keytar: typeof keytarType | null = null
+
+async function getKeytar(): Promise<typeof keytarType> {
+  if (_keytar) return _keytar
+  try {
+    const mod = await import('keytar')
+    _keytar = (mod.default ?? mod) as typeof keytarType
+    return _keytar
+  } catch (err) {
+    throw new Error(
+      `OS keychain support requires the optional 'keytar' dependency, which is ` +
+      `not installed or failed its native build. Install it with ` +
+      `\`npm install keytar\` (needs libsecret-1-dev on Linux). ` +
+      `Pure Bitcoin Schema builders do not need keytar. ` +
+      `Original error: ${err instanceof Error ? err.message : String(err)}`
+    )
+  }
+}
 
 const DEFAULT_SERVICE = 'peck-agent'
 const DEFAULT_ACCOUNT = 'default'
@@ -33,6 +63,7 @@ export interface KeychainLocation {
 export async function loadIdentityKey(loc: KeychainLocation = {}): Promise<string | null> {
   const service = loc.service || DEFAULT_SERVICE
   const account = loc.account || DEFAULT_ACCOUNT
+  const keytar = await getKeytar()
   return await keytar.getPassword(service, account)
 }
 
@@ -49,6 +80,7 @@ export async function storeIdentityKey(
   if (!/^[0-9a-fA-F]{64}$/.test(privateKeyHex)) {
     throw new Error(`Invalid private key hex — expected 64 hex chars, got ${privateKeyHex.length}`)
   }
+  const keytar = await getKeytar()
   await keytar.setPassword(service, account, privateKeyHex.toLowerCase())
 }
 
@@ -59,6 +91,7 @@ export async function storeIdentityKey(
 export async function deleteIdentityKey(loc: KeychainLocation = {}): Promise<boolean> {
   const service = loc.service || DEFAULT_SERVICE
   const account = loc.account || DEFAULT_ACCOUNT
+  const keytar = await getKeytar()
   return await keytar.deletePassword(service, account)
 }
 
@@ -67,6 +100,7 @@ export async function deleteIdentityKey(loc: KeychainLocation = {}): Promise<boo
  * identities stored on this machine.
  */
 export async function listIdentityAccounts(service = DEFAULT_SERVICE): Promise<string[]> {
+  const keytar = await getKeytar()
   const entries = await keytar.findCredentials(service)
   return entries.map(e => e.account)
 }
