@@ -38,4 +38,10 @@ export interface BroadcastResult {
   txid: string
   status: 'queued' | 'submitted' | 'rejected'
   detail?: string
+  /**
+   * Atomic BEEF hex of the broadcast tx (the signed tx + its ancestor proofs),
+   * when wallet-toolbox returns it. Lets a caller assemble a complete SPV proof
+   * once the tx is mined, by attaching the tx's own merkle path (BUMP).
+   */
+  beef?: string
 }

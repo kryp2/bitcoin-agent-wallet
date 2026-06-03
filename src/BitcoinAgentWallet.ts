@@ -473,14 +473,17 @@ export class BitcoinAgentWallet {
       return { txid: '', status: 'rejected', detail: 'wallet.createAction returned no txid' }
     }
     const txid = result.txid
+    // Surface the atomic BEEF (signed tx + ancestor proofs) that createAction
+    // already produced, so callers can assemble a full SPV proof after mining.
+    // Additive and optional — existing callers are unaffected.
+    const beef = result.tx ? Buffer.from(result.tx).toString('hex') : undefined
     if (this.redis && result.tx) {
-      const beefHex = Buffer.from(result.tx).toString('hex')
       const stream = this.config.services?.broadcastStream || DEFAULT_BROADCAST_STREAM
-      const payload = JSON.stringify({ txid, beef_hex: beefHex, topics: ['peck-schema'], attempt: 0 })
+      const payload = JSON.stringify({ txid, beef_hex: beef, topics: ['peck-schema'], attempt: 0 })
       await this.redis.xadd(stream, 'MAXLEN', '~', '100000', '*', 'payload', payload)
-      return { txid, status: 'queued', detail: `enqueued to ${stream}` }
+      return { txid, status: 'queued', detail: `enqueued to ${stream}`, beef }
     }
-    return { txid, status: 'submitted', detail: 'wallet-toolbox ARC' }
+    return { txid, status: 'submitted', detail: 'wallet-toolbox ARC', beef }
   }
 
   /** Kortere helper for single-script broadcasts med 0 sat output. */
