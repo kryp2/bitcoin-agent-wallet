@@ -83,9 +83,24 @@ export class BitcoinAgentWallet {
     // subsequent createAction calls bill at peck-policy.
     const desiredFeeModel = this.config.feeModel ?? { model: 'sat/kb' as const, value: 100 }
     const setupAny = this.setup as any
-    if (setupAny.activeStorage) {
-      setupAny.activeStorage.feeModel = desiredFeeModel
+    if (!setupAny.activeStorage) {
+      throw new Error('cannot set fee policy: setup.activeStorage missing — wallet-toolbox internal layout changed')
     }
+    setupAny.activeStorage.feeModel = desiredFeeModel
+    // Fail loud, not silent. The override above reaches into wallet-toolbox
+    // internals; if its layout ever shifts (or the dep is too old to have the
+    // field), a skipped override silently leaves every tx at the 1 sat/KB
+    // default — below relay policy, so it may never confirm and nothing tells
+    // you why. Read the rate back through the SAME instance createAction reads
+    // (storage.getActive()) and refuse to proceed if it didn't land.
+    const effectiveFee = setupAny.storage?.getActive?.()?.feeModel
+    if (!effectiveFee || effectiveFee.value !== desiredFeeModel.value) {
+      throw new Error(
+        `fee policy did not take effect: effective ${JSON.stringify(effectiveFee)} ` +
+        `≠ desired ${JSON.stringify(desiredFeeModel)} — refusing to broadcast at wallet-toolbox's default rate`,
+      )
+    }
+    console.error(`[agent-wallet] fee policy ${effectiveFee.value} ${effectiveFee.model}`)
     if (this.config.services?.redisHost) {
       this.redis = new Redis({
         host: this.config.services.redisHost,
