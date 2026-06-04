@@ -9,7 +9,6 @@
     "dist",
     "src",
     "README.md",
-    "CLAUDE.md",
     "LICENSE"
   ],
   "scripts": {

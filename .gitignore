@@ -6,3 +6,8 @@ dist/
 .env
 .env.*
 !.env.example
+
+# internal working files — not for public repo
+IN_FLIGHT.md
+CLAUDE.md
+.gemini/
