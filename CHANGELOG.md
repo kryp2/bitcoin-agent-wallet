@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-06-04
+
+### Added
+
+- `feeModel: 'live'` config option: fetch the broadcaster's current policy from ARC `GET /v1/policy` at init instead of hardcoding a rate (falls back to 100 sat/KB if the fetch fails). Exposes `parsePolicyFee` / `fetchLivePolicyFee` for direct use.
+
+## [0.5.4] - 2026-06-04
+
+### Fixed
+
+- Fail loud if the 100 sat/KB fee override doesn't take effect (e.g. wallet-toolbox internals shift, or the dep is too old): read the rate back through the instance `createAction` uses and throw rather than silently broadcasting at 1 sat/KB. Logs the effective policy on init.
+- Stop publishing `CLAUDE.md` (internal dev notes) in the npm tarball.
+
 ## [0.5.3] - 2026-06-03
 
 ### Added
