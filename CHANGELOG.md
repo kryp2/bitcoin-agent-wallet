@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-06-05
+
+### Added
+
+- `completeBeef(txid)`: assemble a complete, SPV-verifiable BEEF for a previously-broadcast tx. `broadcast()` returns the atomic BEEF before mining (no proof for the tx itself); once mined, `completeBeef()` fetches the tx's merkle path (BUMP) from the broadcaster's services and returns the full BEEF that verifies offline against the block-header chain. Returns `{ beef, mined }`. No callback receiver or extra infrastructure needed.
+
 ## [0.5.5] - 2026-06-04
 
 ### Added
