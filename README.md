@@ -102,6 +102,19 @@ const result = await wallet.broadcast({
 
 The wallet handles UTXO selection, ancestor BEEF assembly, signing, and broadcasting. This is the primitive consumers like [`peck-mcp`](https://github.com/kryp2/peck-mcp) use to implement full multi-tool agent surfaces without ever touching raw UTXOs.
 
+### Complete SPV proofs: `wallet.completeBeef()`
+
+`broadcast()` returns the *atomic* BEEF (signed tx + ancestor proofs) at submit time — before mining, the tx itself has no merkle proof. Once it's mined, `completeBeef(txid)` fetches the tx's own merkle path and returns a complete BEEF that verifies **offline** against the block-header chain:
+
+```typescript
+const { txid } = await wallet.broadcast({ /* … */ })
+// …after a block…
+const { beef, mined } = await wallet.completeBeef(txid)
+// mined === true → `beef` is a full SPV proof an auditor can verify with no indexer
+```
+
+No callback receiver or extra infrastructure needed: the merkle path comes from ARC, headers from the bundled chaintracks client.
+
 ## Identity storage (keychain)
 
 The agent's hex private key lives in the OS secret store via [keytar](https://www.npmjs.com/package/keytar):
@@ -182,7 +195,12 @@ await wallet.listenForLivePayments()
 ## Storage
 
 - `{ kind: 'sqlite', filePath }` — local `.db` file, wallet-toolbox `Setup.createWalletSQLite` under the hood
+- `{ kind: 'memory' }` — in-RAM SQLite (`:memory:`), ephemeral, no file. With `skipMessageBox: true` and an explicit `privateKeyHex`, the wallet inits **fully headless** (no keychain, network, or disk) — for tests / CI.
 - `{ kind: 'remote', endpoint }` — TODO (StorageClient against wallet-infra)
+
+## Fees
+
+The wallet bills at **100 sat/KB** by default. wallet-toolbox's own default is `1 sat/KB`, which is below the policy ARC endpoints (TAAL, GorillaPool) currently enforce — transactions at that rate may never confirm. Set `feeModel: 'live'` to fetch the broadcaster's current policy from ARC `GET /v1/policy` at init instead of hardcoding (falls back to 100 if the fetch fails); a fixed `{ model: 'sat/kb', value }` is also accepted. The resolved rate is asserted on init, so a silently-skipped override throws rather than mis-pricing every transaction.
 
 ## Broadcast routing
 
