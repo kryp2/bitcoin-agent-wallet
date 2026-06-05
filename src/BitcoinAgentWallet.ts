@@ -14,7 +14,7 @@
  *
  * Se examples/funding-flow.md for full flyt (TODO).
  */
-import { PrivateKey, AtomicBEEF, Script } from '@bsv/sdk'
+import { PrivateKey, AtomicBEEF, Script, Beef } from '@bsv/sdk'
 import { Setup, Chain } from '@bsv/wallet-toolbox'
 import type { SetupWallet } from '@bsv/wallet-toolbox'
 import { MessageBoxClient, PeerPayClient } from '@bsv/message-box-client'
@@ -283,6 +283,29 @@ export class BitcoinAgentWallet {
   getWalletClient() {
     this.ensureInit()
     return this.setup!.wallet
+  }
+
+  /**
+   * Assemble a complete, SPV-verifiable BEEF for a previously-broadcast tx.
+   *
+   * `broadcast()` returns the *atomic* BEEF (signed tx + ancestor proofs) at
+   * submit time — before mining, the tx itself has no merkle proof. Once the tx
+   * is mined, `completeBeef()` fetches its own merkle path (BUMP) from the
+   * broadcaster's services and returns the full BEEF, which an auditor can
+   * verify offline against the block-header chain without trusting any indexer.
+   *
+   * Returns `{ beef, mined }`. While the tx is still unconfirmed, `mined` is
+   * false and `beef` holds the tx + ancestors but no proof for the tx itself —
+   * poll again after a block. No callback receiver or extra infrastructure is
+   * needed; the merkle path comes from ARC and headers from the bundled
+   * chaintracks client.
+   */
+  async completeBeef(txid: string): Promise<{ beef: string; mined: boolean }> {
+    this.ensureInit()
+    const services = (this.setup as any).services
+    const beef: Beef = await services.getBeefForTxid(txid)
+    const mined = beef.findTxid(txid)?.bumpIndex !== undefined
+    return { beef: beef.toHex(), mined }
   }
 
   /**
