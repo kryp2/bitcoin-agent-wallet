@@ -57,14 +57,25 @@ export class BitcoinAgentWallet {
   async init(): Promise<void> {
     if (this.setup) return
     const storage = this.config.storage || { kind: 'sqlite', filePath: '.bitcoin-agent-wallet.db' }
-    if (storage.kind !== 'sqlite') {
-      throw new Error(`Storage kind ${storage.kind} not yet implemented — use 'sqlite'`)
+    // Resolve the SQLite file path. 'memory' maps to SQLite's in-RAM database
+    // (':memory:') — ephemeral, no file or disk — which lets the wallet run
+    // headless in tests/CI (combine with skipMessageBox + an explicit
+    // privateKeyHex for a fully offline init). 'remote' is not implemented yet.
+    let dbFilePath: string
+    let dbName = 'peck-agent'
+    if (storage.kind === 'sqlite') {
+      dbFilePath = storage.filePath
+      dbName = storage.databaseName || dbName
+    } else if (storage.kind === 'memory') {
+      dbFilePath = ':memory:'
+    } else {
+      throw new Error(`Storage kind '${(storage as any).kind}' not yet implemented — use 'sqlite' or 'memory'`)
     }
     const env = {
       chain: this.network as Chain,
       identityKey: this.identityKey,
       identityKey2: this.identityKey,
-      filePath: storage.filePath,
+      filePath: dbFilePath,
       taalApiKey: process.env.TAAL_API_KEY || '',
       devKeys: { [this.identityKey]: this.config.privateKeyHex },
       mySQLConnection: '',
@@ -72,8 +83,8 @@ export class BitcoinAgentWallet {
     this.setup = await Setup.createWalletSQLite({
       env,
       rootKeyHex: this.config.privateKeyHex,
-      filePath: storage.filePath,
-      databaseName: storage.databaseName || 'peck-agent',
+      filePath: dbFilePath,
+      databaseName: dbName,
     })
     // wallet-toolbox hard-codes feeModel = { sat/kb, value: 1 } in
     // Setup.createStorageKnex (out/src/Setup.js:349) and exposes no Setup-arg
@@ -137,6 +148,11 @@ export class BitcoinAgentWallet {
     // agenten har fått funding (krever en spendable UTXO for å lage
     // tm_messagebox PushDrop-output). Same-host same-routing (agent og
     // recipient begge på msg.peck.to) fungerer uten anoint.
+    //
+    // skipMessageBox skips this network-bound setup — for headless/CI use or
+    // broadcast-only agents that don't need the funding inbox / live payments.
+    // The payment helpers (requestPayment/listenForLivePayments/…) then throw.
+    if (this.config.skipMessageBox) return
     this.messageBox = new MessageBoxClient({
       walletClient: this.setup.wallet,
       host: DEFAULT_MESSAGEBOX_URL,
