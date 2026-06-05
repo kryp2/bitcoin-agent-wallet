@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `storage: { kind: 'memory' }` — in-RAM SQLite (`:memory:`), ephemeral, no file or disk.
+- `skipMessageBox` config flag — skip the network-bound MessageBox/PeerPay setup in `init()`. Together with `{ kind: 'memory' }` and an explicit `privateKeyHex`, the wallet inits fully headless (no keychain, network, or disk) — usable in CI. Payment helpers throw when skipped.
+
 ## [0.5.6] - 2026-06-05
 
 ### Added

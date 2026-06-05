@@ -17,6 +17,10 @@ export interface BitcoinAgentWalletConfig {
    *  hente broadcasterens faktiske policy fra ARC `/v1/policy` ved init
    *  (faller tilbake til 100 hvis henting feiler). */
   feeModel?: FeeModel | 'live'
+  /** Hopp over MessageBox/PeerPay-oppsett i init() (nettverksbundet mot
+   *  msg.peck.to). For headless/CI-bruk eller broadcast-only-agenter som ikke
+   *  trenger funding-inbox / live payments. Payment-helperne kaster da. */
+  skipMessageBox?: boolean
 }
 
 /** sat/kb fee-modell, samme form som wallet-toolbox sin StorageFeeModel. */
