@@ -23,6 +23,7 @@ import Redis from 'ioredis'
 import {
   buildPost, buildLike, buildRepost, buildFollow,
 } from './bitcoinSchema.js'
+import { fetchLivePolicyFee } from './feePolicy.js'
 import type {
   BitcoinAgentWalletConfig,
   BroadcastResult,
@@ -81,7 +82,25 @@ export class BitcoinAgentWallet {
     // is well below standard miner policy and risks rejection / slow
     // inclusion. Mutate the storage instance directly post-init so all
     // subsequent createAction calls bill at peck-policy.
-    const desiredFeeModel = this.config.feeModel ?? { model: 'sat/kb' as const, value: 100 }
+    // Resolve the fee model. 'live' asks the broadcaster for its current policy
+    // (ARC /v1/policy) instead of guessing — correct against whatever the miner
+    // enforces now. Falls back to 100 sat/KB (today's TAAL/GorillaPool policy)
+    // if the fetch fails, so init never blocks on a flaky policy call.
+    let desiredFeeModel: { model: 'sat/kb'; value: number }
+    if (this.config.feeModel === 'live') {
+      const arcUrl = this.config.services?.arcUrl
+        ?? (this.network === 'main' ? 'https://arc.taal.com' : 'https://arc-test.taal.com')
+      const live = await fetchLivePolicyFee(arcUrl, process.env.TAAL_API_KEY)
+      if (live) {
+        desiredFeeModel = live
+        console.error(`[agent-wallet] live fee policy ${live.value} sat/kb (from ${arcUrl}/v1/policy)`)
+      } else {
+        desiredFeeModel = { model: 'sat/kb', value: 100 }
+        console.error('[agent-wallet] live fee policy fetch failed — falling back to 100 sat/kb')
+      }
+    } else {
+      desiredFeeModel = this.config.feeModel ?? { model: 'sat/kb' as const, value: 100 }
+    }
     const setupAny = this.setup as any
     if (!setupAny.activeStorage) {
       throw new Error('cannot set fee policy: setup.activeStorage missing — wallet-toolbox internal layout changed')

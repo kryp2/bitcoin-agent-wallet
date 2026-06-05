@@ -5,7 +5,9 @@ export type {
   ServicesConfig,
   BroadcastResult,
   Network,
+  FeeModel,
 } from './types.js'
+export { parsePolicyFee, fetchLivePolicyFee } from './feePolicy.js'
 export {
   buildPost, buildLike, buildRepost, buildFollow,
   PROTO_B, PROTO_MAP, PROTO_AIP, PIPE,
