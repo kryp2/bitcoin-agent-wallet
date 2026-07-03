@@ -3,7 +3,7 @@ import { parsePolicyFee } from '../src/feePolicy.js'
 
 describe('parsePolicyFee', () => {
   it('reads policy.miningFee into a sat/kb model (real ARC shape)', () => {
-    // arc.taal.com / arc.gorillapool.io /v1/policy, 2026-06-04
+    // arc.gorillapool.io /v1/policy, 2026-06-04 (samme respons-shape som TAALs ARC)
     const data = { policy: { miningFee: { satoshis: 100, bytes: 1000 } } }
     expect(parsePolicyFee(data)).toEqual({ model: 'sat/kb', value: 100 })
   })

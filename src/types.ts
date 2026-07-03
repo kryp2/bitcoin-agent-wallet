@@ -12,7 +12,7 @@ export interface BitcoinAgentWalletConfig {
   /** peck.to service-URL-er. Default peker på prod. */
   services?: ServicesConfig
   /** Fee-modellen wallet-toolbox bruker. Default { sat/kb, value: 100 } som
-   *  matcher dagens TAAL/GorillaPool-policy (wallet-toolbox sin egen default er
+   *  matcher dagens GorillaPool ARC-policy (wallet-toolbox sin egen default er
    *  value: 1 — for lavt for de fleste miner-policies). Sett til 'live' for å
    *  hente broadcasterens faktiske policy fra ARC `/v1/policy` ved init
    *  (faller tilbake til 100 hvis henting feiler). */
@@ -38,8 +38,10 @@ export interface ServicesConfig {
   overlayUrl?: string       // default: https://overlay.peck.to
   headersUrl?: string       // default: https://headers.peck.to
   identityUrl?: string      // default: https://identity.peck.to
-  /** ARC-URL brukt som broadcaster av wallet-toolbox. */
-  arcUrl?: string           // default: https://arc.taal.com (main)
+  /** ARC-URL brukt som broadcaster av wallet-toolbox. Default (main):
+   *  https://arc.gorillapool.io (nøkkelfri). Testnet: https://arc-test.taal.com
+   *  som nøkkelløs fallback — GorillaPool har ingen testnet-ARC. */
+  arcUrl?: string
   /** Redis broadcast-queue. Hvis satt, submitter async via broadcaster-worker i stedet for direkte til overlay. */
   redisHost?: string
   redisPort?: number
