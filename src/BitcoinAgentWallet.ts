@@ -76,7 +76,10 @@ export class BitcoinAgentWallet {
       identityKey: this.identityKey,
       identityKey2: this.identityKey,
       filePath: dbFilePath,
-      taalApiKey: process.env.TAAL_API_KEY || '',
+      // Feltnavnet er wallet-toolbox sitt (SetupEnv krever det). Default er
+      // nøkkelfri — GorillaPool ARC trenger ingen API-nøkkel. Sett ARC_API_KEY
+      // kun hvis du peker mot et ARC-endepunkt som krever auth.
+      taalApiKey: process.env.ARC_API_KEY || '',
       devKeys: { [this.identityKey]: this.config.privateKeyHex },
       mySQLConnection: '',
     }
@@ -95,13 +98,15 @@ export class BitcoinAgentWallet {
     // subsequent createAction calls bill at peck-policy.
     // Resolve the fee model. 'live' asks the broadcaster for its current policy
     // (ARC /v1/policy) instead of guessing — correct against whatever the miner
-    // enforces now. Falls back to 100 sat/KB (today's TAAL/GorillaPool policy)
+    // enforces now. Falls back to 100 sat/KB (today's GorillaPool ARC policy)
     // if the fetch fails, so init never blocks on a flaky policy call.
+    // Mainnet-default = GorillaPool ARC (nøkkelfri). GorillaPool har ingen
+    // testnet-ARC, så testnet beholder TAALs endepunkt som nøkkelløs fallback.
     let desiredFeeModel: { model: 'sat/kb'; value: number }
     if (this.config.feeModel === 'live') {
       const arcUrl = this.config.services?.arcUrl
-        ?? (this.network === 'main' ? 'https://arc.taal.com' : 'https://arc-test.taal.com')
-      const live = await fetchLivePolicyFee(arcUrl, process.env.TAAL_API_KEY)
+        ?? (this.network === 'main' ? 'https://arc.gorillapool.io' : 'https://arc-test.taal.com')
+      const live = await fetchLivePolicyFee(arcUrl, process.env.ARC_API_KEY)
       if (live) {
         desiredFeeModel = live
         console.error(`[agent-wallet] live fee policy ${live.value} sat/kb (from ${arcUrl}/v1/policy)`)

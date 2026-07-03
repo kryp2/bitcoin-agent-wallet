@@ -200,7 +200,7 @@ await wallet.listenForLivePayments()
 
 ## Fees
 
-The wallet bills at **100 sat/KB** by default. wallet-toolbox's own default is `1 sat/KB`, which is below the policy ARC endpoints (TAAL, GorillaPool) currently enforce — transactions at that rate may never confirm. Set `feeModel: 'live'` to fetch the broadcaster's current policy from ARC `GET /v1/policy` at init instead of hardcoding (falls back to 100 if the fetch fails); a fixed `{ model: 'sat/kb', value }` is also accepted. The resolved rate is asserted on init, so a silently-skipped override throws rather than mis-pricing every transaction.
+The wallet bills at **100 sat/KB** by default. wallet-toolbox's own default is `1 sat/KB`, which is below the policy ARC endpoints currently enforce — transactions at that rate may never confirm. Set `feeModel: 'live'` to fetch the broadcaster's current policy from ARC `GET /v1/policy` (default: GorillaPool ARC, `https://arc.gorillapool.io`, keyless; testnet falls back to TAAL's keyless testnet endpoint since GorillaPool has no testnet ARC) at init instead of hardcoding (falls back to 100 if the fetch fails); a fixed `{ model: 'sat/kb', value }` is also accepted. The resolved rate is asserted on init, so a silently-skipped override throws rather than mis-pricing every transaction.
 
 ## Broadcast routing
 
