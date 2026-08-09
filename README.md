@@ -41,7 +41,7 @@ The agent owns the key. UTXO selection, BEEF assembly, signing, and broadcast al
 npm install bitcoin-agent-wallet
 ```
 
-Requires Node.js 20+. Native keychain binding via [keytar](https://www.npmjs.com/package/keytar):
+Requires Node.js 22+. Native keychain binding via [keytar](https://www.npmjs.com/package/keytar):
 - **Linux:** `libsecret-1-0` + a running user keyring (GNOME Keyring or equivalent)
 - **macOS:** Keychain (built-in)
 - **Windows:** Credential Manager (built-in)
