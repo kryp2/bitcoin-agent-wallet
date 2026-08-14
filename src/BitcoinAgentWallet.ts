@@ -68,8 +68,12 @@ export class BitcoinAgentWallet {
       dbName = storage.databaseName || dbName
     } else if (storage.kind === 'memory') {
       dbFilePath = ':memory:'
+    } else if (storage.kind === 'remote') {
+      // Remote storage has no local SQLite file: wallet state lives on the
+      // wallet-infra StorageServer (bank.peck.to), one tenant per identity key.
+      dbFilePath = ''
     } else {
-      throw new Error(`Storage kind '${(storage as any).kind}' not yet implemented — use 'sqlite' or 'memory'`)
+      throw new Error(`Storage kind '${(storage as any).kind}' not yet implemented — use 'sqlite', 'memory' or 'remote'`)
     }
     const env = {
       chain: this.network as Chain,
@@ -83,12 +87,24 @@ export class BitcoinAgentWallet {
       devKeys: { [this.identityKey]: this.config.privateKeyHex },
       mySQLConnection: '',
     }
-    this.setup = await Setup.createWalletSQLite({
-      env,
-      rootKeyHex: this.config.privateKeyHex,
-      filePath: dbFilePath,
-      databaseName: dbName,
-    })
+    if (storage.kind === 'remote') {
+      this.setup = await Setup.createWalletClient({
+        env,
+        rootKeyHex: this.config.privateKeyHex,
+        endpointUrl: storage.endpoint,
+      })
+    } else {
+      this.setup = await Setup.createWalletSQLite({
+        env,
+        rootKeyHex: this.config.privateKeyHex,
+        filePath: dbFilePath,
+        databaseName: dbName,
+      })
+    }
+    // The fee-model override below targets the local StorageKnex (SQLite). For
+    // remote storage the fee policy is owned by the remote StorageServer
+    // (wallet-infra FEE_MODEL env), so the local override is skipped.
+    if (storage.kind !== 'remote') {
     // wallet-toolbox hard-codes feeModel = { sat/kb, value: 1 } in
     // Setup.createStorageKnex (out/src/Setup.js:349) and exposes no Setup-arg
     // to override. Fee policy across the peck stack is 100 sat/KB
@@ -136,6 +152,7 @@ export class BitcoinAgentWallet {
       )
     }
     console.error(`[agent-wallet] fee policy ${effectiveFee.value} ${effectiveFee.model}`)
+    }
     if (this.config.services?.redisHost) {
       this.redis = new Redis({
         host: this.config.services.redisHost,
