@@ -23,13 +23,17 @@ describe('memory storage (headless)', () => {
     await expect(wallet.anointHost()).rejects.toThrow()
   }, 30_000)
 
-  it('rejects unimplemented storage kinds with a clear message', async () => {
+  it('remote storage wires the StorageClient lane (connection attempt, not "not implemented")', async () => {
     const wallet = new BitcoinAgentWallet({
       privateKeyHex: PrivateKey.fromHex('33'.repeat(32)).toHex(),
       network: 'main',
       storage: { kind: 'remote', endpoint: 'https://example.test' },
       skipMessageBox: true,
     })
-    await expect(wallet.init()).rejects.toThrow(/remote/)
+    // Remote storage is implemented: init() constructs a wallet-toolbox
+    // StorageClient and performs the BRC-104 auth handshake against the
+    // endpoint. An unreachable endpoint must surface as a network/auth error,
+    // proving the remote lane is wired — not the old "not implemented" throw.
+    await expect(wallet.init()).rejects.toThrow(/Network error|fetch|connect|ECONN/i)
   })
 })
