@@ -43,15 +43,15 @@
   },
   "homepage": "https://github.com/kryp2/bitcoin-agent-wallet#readme",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
-    "@bsv/message-box-client": "^2.1.0",
-    "@bsv/sdk": "^2.0.13",
-    "@bsv/wallet-toolbox": "^2.1.18",
+    "@bsv/message-box-client": "^2.3.0",
+    "@bsv/sdk": "^2.3.1",
+    "@bsv/wallet-toolbox": "^2.6.2",
     "dotenv": "^17.4.2",
     "ioredis": "^5.10.1",
     "sqlite3": "^6.0.1"
@@ -63,6 +63,6 @@
     "@types/node": "^22.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0",
-    "vitest": "3.2.4"
+    "vitest": "3.2.7"
   }
 }
