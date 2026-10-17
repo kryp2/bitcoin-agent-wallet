@@ -1,6 +1,6 @@
 /**
- * Sjekk agentens payment_inbox for innkommende BRC-29-payments.
- * Aksepter dem (internalizeAction) hvis de finnes.
+ * Check the agent's payment_inbox for incoming BRC-29-payments.
+ * Accept them (internalizeAction) if any exist.
  */
 import { homedir } from 'os'
 import { join } from 'path'

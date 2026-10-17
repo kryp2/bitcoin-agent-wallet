@@ -1,7 +1,7 @@
 /**
- * Proof-of-life: agent sender PaymentRequest til user's BRC-100-wallet via
- * standard @bsv/message-box-client payment_requests-box. Du skal se den i
- * BSV Desktop / Babbage-wallet som "incoming payment request".
+ * Proof of life: the agent sends a PaymentRequest to the user's BRC-100 wallet via
+ * the standard @bsv/message-box-client payment_requests box. You should see it in
+ * BSV Desktop / Babbage wallet as an "incoming payment request".
  */
 import { homedir } from 'os'
 import { join } from 'path'

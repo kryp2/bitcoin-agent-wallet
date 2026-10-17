@@ -1,29 +1,29 @@
 export type Network = 'main' | 'test'
 
 export interface BitcoinAgentWalletConfig {
-  /** Agent's private key (hex, 32 bytes). Samme format som ~/.peck/identity.json. */
+  /** Agent's private key (hex, 32 bytes). Same format as ~/.peck/identity.json. */
   privateKeyHex: string
-  /** 'main' (default) eller 'test'. */
+  /** 'main' (default) or 'test'. */
   network?: Network
-  /** App-streng som settes i MAP 'app'-felt. Default 'peck.agents'. */
+  /** App string set in the MAP 'app' field. Default 'peck.agents'. */
   appName?: string
-  /** Storage-backend for wallet-toolbox state. */
+  /** Storage backend for wallet-toolbox state. */
   storage?: StorageConfig
-  /** peck.to service-URL-er. Default peker på prod. */
+  /** peck.to service URLs. Defaults point to prod. */
   services?: ServicesConfig
-  /** Fee-modellen wallet-toolbox bruker. Default { sat/kb, value: 100 } som
-   *  matcher dagens GorillaPool ARC-policy (wallet-toolbox sin egen default er
-   *  value: 1 — for lavt for de fleste miner-policies). Sett til 'live' for å
-   *  hente broadcasterens faktiske policy fra ARC `/v1/policy` ved init
-   *  (faller tilbake til 100 hvis henting feiler). */
+  /** Fee model used by wallet-toolbox. Default { sat/kb, value: 100 }, which
+   *  matches the current GorillaPool ARC policy (wallet-toolbox's own default is
+   *  value: 1 — too low for most miner policies). Set to 'live' to
+   *  fetch the broadcaster's actual policy from ARC `/v1/policy` at init
+   *  (falls back to 100 if the fetch fails). */
   feeModel?: FeeModel | 'live'
-  /** Hopp over MessageBox/PeerPay-oppsett i init() (nettverksbundet mot
-   *  msg.peck.to). For headless/CI-bruk eller broadcast-only-agenter som ikke
-   *  trenger funding-inbox / live payments. Payment-helperne kaster da. */
+  /** Skip MessageBox/PeerPay setup in init() (network-bound to
+   *  msg.peck.to). For headless/CI use or broadcast-only agents that do not
+   *  need a funding inbox / live payments. The payment helpers throw then. */
   skipMessageBox?: boolean
 }
 
-/** sat/kb fee-modell, samme form som wallet-toolbox sin StorageFeeModel. */
+/** sat/kb fee model, same shape as wallet-toolbox's StorageFeeModel. */
 export interface FeeModel {
   model: 'sat/kb'
   value: number
@@ -38,11 +38,11 @@ export interface ServicesConfig {
   overlayUrl?: string       // default: https://overlay.peck.to
   headersUrl?: string       // default: https://headers.peck.to
   identityUrl?: string      // default: https://identity.peck.to
-  /** ARC-URL brukt som broadcaster av wallet-toolbox. Default (main):
-   *  https://arc.gorillapool.io (nøkkelfri). Testnet: https://arc-test.taal.com
-   *  som nøkkelløs fallback — GorillaPool har ingen testnet-ARC. */
+  /** ARC URL used as the wallet-toolbox broadcaster. Default (main):
+   *  https://arc.gorillapool.io (keyless). Testnet: https://arc-test.taal.com
+   *  as a keyless fallback — GorillaPool has no testnet ARC. */
   arcUrl?: string
-  /** Redis broadcast-queue. Hvis satt, submitter async via broadcaster-worker i stedet for direkte til overlay. */
+  /** Redis broadcast queue. If set, submits async via the broadcaster worker instead of directly to overlay. */
   redisHost?: string
   redisPort?: number
   broadcastStream?: string  // default: 'broadcast-queue'
