@@ -1,16 +1,16 @@
 /**
  * BitcoinAgentWallet — BRC-100 native wallet for autonomous agents.
  *
- * Wraps @bsv/wallet-toolbox. Agenten eier nøkkelen, wallet-toolbox håndterer
- * UTXO-state, ancestor-BEEF, signing via wallet.createAction(). Ingen P2PKH-
- * shortcuts — alt går via proper BRC-100-basket-mønster.
+ * Wraps @bsv/wallet-toolbox. The agent owns the key; wallet-toolbox handles
+ * UTXO state, ancestor BEEF, signing via wallet.createAction(). No P2PKH
+ * shortcuts — everything goes through the proper BRC-100 basket pattern.
  *
  * FUNDING-FLOW:
- *   Agenten produserer en funding-request via makeFundingRequest().
- *   User's BRC-wallet (eller annen agent) sender BRC-29-payment til agentens
- *   identityKey med derivationPrefix/Suffix.
- *   Agenten internalizeAction på payment-TXen m/ protocol='wallet payment'.
- *   Da har walletet BRC-29-sporede UTXO-er den kan bruke i createAction.
+ *   The agent produces a funding request via makeFundingRequest().
+ *   The user's BRC wallet (or another agent) sends a BRC-29 payment to the agent's
+ *   identityKey with derivationPrefix/Suffix.
+ *   The agent calls internalizeAction on the payment TX with protocol='wallet payment'.
+ *   The wallet then has BRC-29-tracked UTXOs it can spend in createAction.
  *
  * Se examples/funding-flow.md for full flyt (TODO).
  */
@@ -81,8 +81,8 @@ export class BitcoinAgentWallet {
       identityKey2: this.identityKey,
       filePath: dbFilePath,
       // Feltnavnet er wallet-toolbox sitt (SetupEnv krever det). Default er
-      // nøkkelfri — GorillaPool ARC trenger ingen API-nøkkel. Sett ARC_API_KEY
-      // kun hvis du peker mot et ARC-endepunkt som krever auth.
+      // keyless — GorillaPool ARC needs no API key. Set ARC_API_KEY
+      // only if you point at an ARC endpoint that requires auth.
       taalApiKey: process.env.ARC_API_KEY || '',
       devKeys: { [this.identityKey]: this.config.privateKeyHex },
       mySQLConnection: '',
@@ -116,8 +116,8 @@ export class BitcoinAgentWallet {
     // (ARC /v1/policy) instead of guessing — correct against whatever the miner
     // enforces now. Falls back to 100 sat/KB (today's GorillaPool ARC policy)
     // if the fetch fails, so init never blocks on a flaky policy call.
-    // Mainnet-default = GorillaPool ARC (nøkkelfri). GorillaPool har ingen
-    // testnet-ARC, så testnet beholder TAALs endepunkt som nøkkelløs fallback.
+    // Mainnet default = GorillaPool ARC (keyless). GorillaPool has no
+    // testnet ARC, so testnet keeps TAAL's endpoint as a keyless fallback.
     let desiredFeeModel: { model: 'sat/kb'; value: number }
     if (this.config.feeModel === 'live') {
       const arcUrl = this.config.services?.arcUrl
@@ -164,12 +164,12 @@ export class BitcoinAgentWallet {
     }
 
     // MessageBoxClient for generisk meldingsutveksling (funding-requests etc).
-    // PeerPayClient extends det + håndterer BRC-29-payments automatisk.
-    // Begge bruker vår wallet for BRC-104 auth. init() verifiserer kun wallet-
-    // connectivity — SHIP-anoint må gjøres eksplisitt via anointHost() etter at
-    // agenten har fått funding (krever en spendable UTXO for å lage
-    // tm_messagebox PushDrop-output). Same-host same-routing (agent og
-    // recipient begge på msg.peck.to) fungerer uten anoint.
+    // PeerPayClient extends it + handles BRC-29 payments automatically.
+    // Both use our wallet for BRC-104 auth. init() only verifies wallet
+    // connectivity — SHIP anoint must be done explicitly via anointHost() after
+    // the agent has been funded (needs a spendable UTXO to create the
+    // tm_messagebox PushDrop output). Same-host same-routing (agent and
+    // recipient both on msg.peck.to) works without anoint.
     //
     // skipMessageBox skips this network-bound setup — for headless/CI use or
     // broadcast-only agents that don't need the funding inbox / live payments.
@@ -189,12 +189,12 @@ export class BitcoinAgentWallet {
   }
 
   /**
-   * Anoint agentens messagebox-host på overlay (SHIP-advertisement). Påkrevd
-   * for cross-host discovery — hvis agenten og sender bruker ulike messagebox-
-   * hosts, må senderens wallet kunne SHIP-lookup'e agenten.
+   * Anoint the agent's messagebox host on the overlay (SHIP advertisement). Required
+   * for cross-host discovery — if the agent and sender use different messagebox
+   * hosts, the sender's wallet must be able to SHIP-lookup the agent.
    *
-   * Krever en spendable UTXO (minst ~10 sat til fee + 1 sat til advertisement-
-   * output). Kall først etter at agenten har mottatt funding.
+   * Requires a spendable UTXO (at least ~10 sat for fee + 1 sat for the advertisement
+   * output). Call only after the agent has received funding.
    */
   async anointHost(host?: string): Promise<{ txid: string }> {
     this.ensureInit()
@@ -205,15 +205,15 @@ export class BitcoinAgentWallet {
   // --- Payment requests (BRC-100 / @bsv/message-box-client standard) ---
 
   /**
-   * Be en recipient (user's BRC-100-wallet eller annen agent) om betaling via
-   * standard `payment_requests`-box. Sender en PaymentRequestMessage med
-   * requestId + HMAC-proof (protocolID [2, 'payment request auth']). Kompatible
-   * wallets (Babbage, bsv-browser, peck-desktop) plukker den opp via
-   * listIncomingPaymentRequests og kan approve → sendLivePayment til vårt
+   * Ask a recipient (the user's BRC-100 wallet or another agent) for payment via
+   * standard `payment_requests`-box. Sends a PaymentRequestMessage with
+   * requestId + HMAC proof (protocolID [2, 'payment request auth']). Compatible
+   * wallets (Babbage, bsv-browser, peck-desktop) pick it up via
+   * listIncomingPaymentRequests and can approve → sendLivePayment to our
    * payment_inbox.
    *
-   * Returnerer requestId + requestProof slik at caller kan cancel'e senere.
-   * Kaster 'Payment request blocked' hvis recipient har blokkert vår identityKey.
+   * Returns requestId + requestProof so the caller can cancel later.
+   * Throws 'Payment request blocked' if the recipient has blocked our identityKey.
    */
   async requestPayment(args: {
     recipientIdentityKey: string
@@ -257,10 +257,10 @@ export class BitcoinAgentWallet {
   }
 
   /**
-   * Poll agentens payment_inbox for innkommende BRC-29-payments via PeerPay.
-   * Hver melding er en PaymentToken med BEEF + derivation info — PeerPay's
-   * acceptPayment håndterer internalizeAction automatisk.
-   * Returnerer antall payments akseptert.
+   * Poll the agent's payment_inbox for incoming BRC-29 payments via PeerPay.
+   * Each message is a PaymentToken with BEEF + derivation info — PeerPay's
+   * acceptPayment handles internalizeAction automatically.
+   * Returns the number of payments accepted.
    */
   async processIncomingPayments(): Promise<number> {
     this.ensureInit()
@@ -279,9 +279,9 @@ export class BitcoinAgentWallet {
   }
 
   /**
-   * Lytt etter live (WebSocket) payments. Kaller onPayment når en payment
-   * kommer inn — caller velger å accept/reject. Typisk agent-loop setter
-   * dette opp én gang og lar PeerPay auto-accept.
+   * Listen for live (WebSocket) payments. Calls onPayment when a payment
+   * arrives — the caller chooses to accept/reject. A typical agent loop sets
+   * this up once and lets PeerPay auto-accept.
    */
   async listenForLivePayments(onPayment?: (p: IncomingPayment) => void): Promise<void> {
     this.ensureInit()
@@ -347,9 +347,9 @@ export class BitcoinAgentWallet {
   }
 
   /**
-   * Motta en BRC-29 payment (atomic BEEF) og internaliser den i walletet.
-   * Argumentene (derivationPrefix/Suffix/senderIdentityKey) kommer fra
-   * senderens createAction-response. Etter dette har walletet brukbare
+   * Receive a BRC-29 payment (atomic BEEF) and internalize it into the wallet.
+   * The arguments (derivationPrefix/Suffix/senderIdentityKey) come from
+   * the sender's createAction response. After this the wallet has spendable
    * satoshis for createAction().
    */
   async receivePayment(args: {
@@ -520,15 +520,15 @@ export class BitcoinAgentWallet {
   }
 
   /**
-   * Lav-nivå public: broadcast arbitrary outputs through wallet-toolbox.
+   * Low-level public: broadcast arbitrary outputs through wallet-toolbox.
    *
-   * All UTXO-valg, ancestor BEEF-assembly, signing og broadcast til ARC
-   * (eller Redis → peck-broadcaster → overlay hvis services.redisHost er
-   * satt) skjer via `@bsv/wallet-toolbox` createAction. Caller leverer
-   * bare outputs og en description.
+   * All UTXO selection, ancestor BEEF assembly, signing and broadcast to ARC
+   * (or Redis → peck-broadcaster → overlay if services.redisHost is
+   * set) happen via `@bsv/wallet-toolbox` createAction. The caller supplies
+   * only outputs and a description.
    *
-   * Typisk bruk: appen bygger et Bitcoin Schema MAP+B+AIP script (eller
-   * noe annet lockingScript) og lar bitcoin-agent-wallet håndtere resten:
+   * Typical use: the app builds a Bitcoin Schema MAP+B+AIP script (or
+   * any other lockingScript) and lets bitcoin-agent-wallet handle the rest:
    *
    * ```ts
    * const script = buildMessageScript({channel, content, ...})
@@ -538,9 +538,9 @@ export class BitcoinAgentWallet {
    * })
    * ```
    *
-   * Denne primitiven gjør at høy-nivå apper (peck-mcp, scripts, daemons)
-   * kan bruke bitcoin-agent-wallet as the only wallet backend uten å bygge
-   * eget UTXO-management eller egen broadcast-path.
+   * This primitive lets high-level apps (peck-mcp, scripts, daemons)
+   * use bitcoin-agent-wallet as the only wallet backend without building
+   * their own UTXO management or broadcast path.
    */
   async broadcast(args: {
     description: string
@@ -581,7 +581,7 @@ export class BitcoinAgentWallet {
     return { txid, status: 'submitted', detail: 'wallet-toolbox ARC', beef }
   }
 
-  /** Kortere helper for single-script broadcasts med 0 sat output. */
+  /** Shorter helper for single-script broadcasts with 0 sat output. */
   private async broadcastScript(scriptHex: string, description: string): Promise<BroadcastResult> {
     return this.broadcast({
       description,

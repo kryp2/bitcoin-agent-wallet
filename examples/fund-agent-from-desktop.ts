@@ -1,10 +1,10 @@
 /**
- * Fund agent direkte fra peck-desktop ved å kalle PeerPayClient.sendPayment
- * via walleten som eksponeres på localhost:3321. Omgår peck-desktop UI sin
- * identity-autocompleter (som krever BRC-52-cert for å la send gå gjennom).
+ * Fund the agent directly from peck-desktop by calling PeerPayClient.sendPayment
+ * via the wallet exposed on localhost:3321. Bypasses peck-desktop's UI
+ * identity autocompleter (which requires a BRC-52 cert to let the send through).
  *
- * Kjør med peck-desktop åpen. Walleten der vil spørre om permission første
- * gang, du approver i peck-desktop-GUI.
+ * Run with peck-desktop open. The wallet there will ask for permission the first
+ * time; approve it in the peck-desktop GUI.
  *
  *   npx tsx examples/fund-agent-from-desktop.ts
  */
@@ -15,8 +15,8 @@ const AGENT_IDENTITY_KEY = '03324aa0316f3c574801e3dbec30aaf36c611b8298787acba6e5
 const AMOUNT_SATS = 5000
 
 async function main() {
-  // json-api-substrate = peck-desktop HTTP bridge på localhost:3321.
-  // 'auto' fungerer bare i browser; Node må eksplisitt velge.
+  // json-api-substrate = peck-desktop HTTP bridge on localhost:3321.
+  // 'auto' only works in the browser; Node must choose explicitly.
   const wallet = new WalletClient('json-api', 'peck-agent-wallet.smoke')
   const peerPay = new PeerPayClient({
     walletClient: wallet,

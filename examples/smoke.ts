@@ -1,13 +1,13 @@
 /**
  * Smoke-test for BitcoinAgentWallet — BRC-100 native flow.
  *
- * Kjør:
+ * Run:
  *   npx tsx examples/smoke.ts
  *
- * 1. Scripten initialiserer wallet, printer agentens identity key
- * 2. Den venter til en BRC-29-payment dukker opp i inbox
- * 3. Du åpner din BRC-100-wallet, Send → Recipient = printed identity key → Amount (feks 5000 sat) → Send
- * 4. Agenten plukker opp, internaliserer, poster til peck.to
+ * 1. The script initializes the wallet and prints the agent's identity key
+ * 2. It waits until a BRC-29 payment shows up in the inbox
+ * 3. You open your BRC-100 wallet, Send → Recipient = printed identity key → Amount (e.g. 5000 sat) → Send
+ * 4. The agent picks it up, internalizes it, posts to peck.to
  */
 import { homedir } from 'os'
 import { join } from 'path'
