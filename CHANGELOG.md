@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `migrateFromPeckIdentityJson()` no longer returns `importedHexPrefix` (the first 20 hex characters of the private key); it returns `identityPublicKey` instead. `examples/migrate-to-keychain.ts` printed 16-20 private-key characters to the console; it now prints the public identity key. (Breaking for callers that read `importedHexPrefix`.)
+
 ### Added
 
 - `storage: { kind: 'memory' }` — in-RAM SQLite (`:memory:`), ephemeral, no file or disk.

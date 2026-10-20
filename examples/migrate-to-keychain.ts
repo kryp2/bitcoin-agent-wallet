@@ -8,6 +8,7 @@
  *
  * Re-runnable: if the keychain already has an entry, nothing is touched.
  */
+import { PrivateKey } from '@bsv/sdk'
 import {
   loadIdentityKey,
   migrateFromPeckIdentityJson,
@@ -17,7 +18,7 @@ import {
 async function main() {
   const existing = await loadIdentityKey()
   if (existing) {
-    console.log(`✓ Already in keychain. prefix=${existing.slice(0, 16)}…`)
+    console.log(`✓ Already in keychain. identity=${PrivateKey.fromString(existing, 'hex').toPublicKey().toString()}`)
     console.log(`  (nothing to migrate — call deleteIdentityKey() first if you want to re-import)`)
     return
   }
@@ -31,7 +32,7 @@ async function main() {
 
   writeMigrationBreadcrumb(result.backupPath)
   console.log(`✓ Migrated identity to keychain (service=peck-agent account=default)`)
-  console.log(`  key prefix: ${result.importedHexPrefix}…`)
+  console.log(`  identity: ${result.identityPublicKey}`)
   console.log(`  backup: ${result.backupPath}`)
   console.log(`  breadcrumb: ~/.peck/MIGRATED_TO_KEYCHAIN.md`)
   console.log()

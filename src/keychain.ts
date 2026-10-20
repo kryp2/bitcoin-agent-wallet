@@ -14,6 +14,7 @@
 import { readFileSync, existsSync, renameSync, mkdirSync, writeFileSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
+import { PrivateKey } from '@bsv/sdk'
 import type keytarType from 'keytar'
 
 /**
@@ -113,12 +114,13 @@ export async function listIdentityAccounts(service = DEFAULT_SERVICE): Promise<s
  * ~/.peck/identity.json.migrated-<timestamp>.bak so the user can verify
  * the keychain entry works before destroying the plaintext copy.
  *
- * Returns the imported identityKey prefix (first 20 hex chars) for logging.
- * No-op (returns null) if JSON doesn't exist or already migrated.
+ * Returns the identity PUBLIC key (safe to log) and the backup path. No part of
+ * the private key is returned. No-op (returns null) if JSON doesn't exist or
+ * already migrated.
  */
 export async function migrateFromPeckIdentityJson(
   loc: KeychainLocation = {},
-): Promise<{ importedHexPrefix: string; backupPath: string } | null> {
+): Promise<{ identityPublicKey: string; backupPath: string } | null> {
   if (!existsSync(LEGACY_PECK_IDENTITY_PATH)) return null
 
   // If keychain already populated at this location, don't clobber — the JSON
@@ -139,7 +141,7 @@ export async function migrateFromPeckIdentityJson(
   const backupPath = `${LEGACY_PECK_IDENTITY_PATH}.migrated-${ts}.bak`
   renameSync(LEGACY_PECK_IDENTITY_PATH, backupPath)
 
-  return { importedHexPrefix: hex.slice(0, 20), backupPath }
+  return { identityPublicKey: PrivateKey.fromString(hex, 'hex').toPublicKey().toString(), backupPath }
 }
 
 /**
